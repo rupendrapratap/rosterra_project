@@ -11,11 +11,15 @@ const dataSchema = new mongoose.Schema({
     required: false,
     trim: true
   },
-  followers: {
-    type: Number,
+  youtubeurl: {
+    type: String,
     required: false,
-    min: 0,
-    default: 0
+    trim: true
+  },
+  followers: {
+    type: String,
+    required: false,
+    default: '0'
   },
   averageView: {
     type: Number,
@@ -31,9 +35,9 @@ const dataSchema = new mongoose.Schema({
     default: 0
   },
   language: {
-    type: String,
+    type: [String],
     required: false,
-    trim: true
+    default: []
   },
   gender: {
     type: String,
@@ -100,11 +104,21 @@ const dataSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
+  },
+  category: {
+    type: [String],
+    required: false,
+    default: []
+  },
+  platform: {
+    type: [String],
+    required: false,
+    default: []
   }
 });
 
 // Update updatedAt before saving
-dataSchema.pre('save', function(next) {
+dataSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });

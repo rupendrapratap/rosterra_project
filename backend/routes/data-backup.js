@@ -6,7 +6,6 @@ const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 const Data = require('../models/Data');
-const User = require('../models/User'); // Import User model
 const auth = require('../middleware/auth');
 
 // Configure HTTPS agent (for development - accepts self-signed certificates)
@@ -30,23 +29,10 @@ const upload = multer({
   }
 });
 
-// Get all data - admins see all, others see only their own + admin-created data
+// Get all data for logged in user
 router.get('/', auth, async (req, res) => {
   try {
-    let query;
-    if (req.user.role === 'admin') {
-      query = {};
-    } else {
-      // Find all admin IDs
-      const admins = await User.find({ role: 'admin' }).distinct('_id');
-      query = {
-        $or: [
-          { userId: req.user._id },
-          { userId: { $in: admins } }
-        ]
-      };
-    }
-    const data = await Data.find(query).sort({ createdAt: -1 });
+    const data = await Data.find({ userId: req.user._id }).sort({ createdAt: -1 });
     res.json(data);
   } catch (error) {
     console.error('Get data error:', error);
@@ -57,21 +43,7 @@ router.get('/', auth, async (req, res) => {
 // Get single data entry
 router.get('/:id', auth, async (req, res) => {
   try {
-    let query;
-    if (req.user.role === 'admin') {
-      query = { _id: req.params.id };
-    } else {
-      // Find all admin IDs
-      const admins = await User.find({ role: 'admin' }).distinct('_id');
-      query = {
-        _id: req.params.id,
-        $or: [
-          { userId: req.user._id },
-          { userId: { $in: admins } }
-        ]
-      };
-    }
-    const data = await Data.findOne(query);
+    const data = await Data.findOne({ _id: req.params.id, userId: req.user._id });
     if (!data) {
       return res.status(404).json({ message: 'Data not found' });
     }
@@ -85,7 +57,7 @@ router.get('/:id', auth, async (req, res) => {
 // Create new data entry
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, instagramurl, youtubeurl, email, followers, averageView, er, language, gender, state, city, contactno, commercial, category, platform } = req.body;
+    const { name, instagramurl, youtubeUrl, email, address, category, followersRange, language, gender, state, city, contactno, commercial } = req.body;
 
     // Validation
     if (!name || !gender || !city || !state) {
@@ -95,19 +67,17 @@ router.post('/', auth, async (req, res) => {
     const data = new Data({
       name,
       instagramurl: instagramurl || '',
-      youtubeurl: youtubeurl || '',
+      youtubeUrl: youtubeUrl || '',
       email: email || '',
-      followers: followers || '0',
-      averageView: averageView ? parseInt(averageView) : 0,
-      er: er ? parseFloat(er) : 0,
-      language: language || [],
+      address: address || '',
+      category: category || '',
+      followersRange: followersRange || '',
+      language: language || '',
       gender,
       state,
       city,
       contactno: contactno || '',
       commercial: commercial || '',
-      category: category || [],
-      platform: platform || [],
       userId: req.user._id
     });
 
@@ -127,29 +97,26 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Only admins can edit data.' });
     }
 
-    const { name, instagramurl, youtubeurl, email, followers, averageView, er, language, gender, state, city, contactno, commercial, category, platform } = req.body;
+    const { name, instagramurl, youtubeUrl, email, address, category, followersRange, language, gender, state, city, contactno, commercial } = req.body;
 
-    const query = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, userId: req.user._id };
-    const data = await Data.findOne(query);
+    const data = await Data.findOne({ _id: req.params.id, userId: req.user._id });
     if (!data) {
       return res.status(404).json({ message: 'Data not found' });
     }
 
     if (name !== undefined) data.name = name;
     if (instagramurl !== undefined) data.instagramurl = instagramurl;
-    if (youtubeurl !== undefined) data.youtubeurl = youtubeurl;
+    if (youtubeUrl !== undefined) data.youtubeUrl = youtubeUrl;
     if (email !== undefined) data.email = email;
-    if (followers !== undefined) data.followers = followers;
-    if (averageView !== undefined) data.averageView = parseInt(averageView) || 0;
-    if (er !== undefined) data.er = parseFloat(er) || 0;
+    if (address !== undefined) data.address = address;
+    if (category !== undefined) data.category = category;
+    if (followersRange !== undefined) data.followersRange = followersRange;
     if (language !== undefined) data.language = language;
     if (gender !== undefined) data.gender = gender;
     if (state !== undefined) data.state = state;
     if (city !== undefined) data.city = city;
     if (contactno !== undefined) data.contactno = contactno;
     if (commercial !== undefined) data.commercial = commercial;
-    if (category !== undefined) data.category = category;
-    if (platform !== undefined) data.platform = platform;
     data.updatedAt = Date.now();
 
     await data.save();
@@ -168,8 +135,7 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Only admins can delete data.' });
     }
 
-    const query = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, userId: req.user._id };
-    const data = await Data.findOneAndDelete(query);
+    const data = await Data.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
     if (!data) {
       return res.status(404).json({ message: 'Data not found' });
     }
@@ -194,7 +160,8 @@ router.post('/delete-multiple', auth, async (req, res) => {
     }
 
     const result = await Data.deleteMany({
-      _id: { $in: ids }
+      _id: { $in: ids },
+      userId: req.user._id
     });
 
     res.json({ message: `${result.deletedCount} record(s) deleted successfully` });
@@ -244,39 +211,30 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
     for (let row of jsonData) {
       const name = getField(row, ['name', 'Name', 'NAME', 'fullname', 'Full Name']);
       const instagramurl = getField(row, ['instagramurl', 'Instagram URL', 'instagram url', 'instagram', 'Instagram', 'insta url', 'Insta URL']);
-      const youtubeurl = getField(row, ['youtubeurl', 'YouTube URL', 'youtube url', 'youtube', 'YouTube', 'yt url', 'YT URL']);
-      const email = getField(row, ['email', 'Email', 'EMAIL', 'e-mail', 'E-mail', 'mail', 'Mail']);
       const followersStr = getField(row, ['followers', 'Followers', 'FOLLOWERS', 'follower', 'Follower']);
       const followers = followersStr ? parseInt(followersStr) : 0;
       const averageViewStr = getField(row, ['averageview', 'Average View', 'average view', 'avg view', 'Avg View', 'averageviews', 'Average Views']);
       const averageView = averageViewStr ? parseInt(averageViewStr) : 0;
       const erStr = getField(row, ['er', 'ER', 'er (%)', 'ER (%)', 'engagement rate', 'Engagement Rate', 'engagement', 'Engagement']);
       const er = erStr ? parseFloat(erStr) : 0;
-      const languageStr = getField(row, ['language', 'Language', 'LANGUAGE', 'lang', 'Lang']);
-      const language = languageStr ? languageStr.split(',').map(l => l.trim()).filter(l => l) : [];
+      const language = getField(row, ['language', 'Language', 'LANGUAGE', 'lang', 'Lang']);
       const gender = getField(row, ['gender', 'Gender', 'GENDER', 'sex', 'Sex']);
       const state = getField(row, ['state', 'State', 'STATE']);
       const city = getField(row, ['city', 'City', 'CITY']);
       const contactno = getField(row, ['contactno', 'Contact No', 'contact no', 'Contact Number', 'contact number', 'ContactNo', 'contactNo', 'CONTACTNO', 'contact_no', 'Contact_No', 'CONTACT_NO', 'phone', 'Phone', 'PHONE', 'phone number', 'Phone Number', 'phone_number', 'Phone_Number', 'mobile', 'Mobile', 'MOBILE', 'mobile number', 'Mobile Number', 'mobile_number', 'Mobile_Number', 'contact', 'Contact', 'CONTACT', 'whatsapp', 'WhatsApp', 'whatsapp number', 'WhatsApp Number']);
       const commercial = getField(row, ['commercial', 'Commercial', 'COMMERCIAL', 'Commercials', 'commercials', 'COMMERCIALS', 'commercial value', 'Commercial Value', 'commercial_value', 'Commercial_Value']);
-      const category = getField(row, ['category', 'Category', 'CATEGORY', 'cat', 'Cat']);
-      const platform = getField(row, ['platform', 'Platform', 'PLATFORM', 'site', 'Site']);
 
       if (name && gender && city && state) {
         const dataEntry = {
           name,
           instagramurl: instagramurl || '',
-          youtubeurl: youtubeurl || '',
-          email: email || '',
           followers: !isNaN(followers) && followers >= 0 ? followers : 0,
           averageView: !isNaN(averageView) && averageView >= 0 ? averageView : 0,
           er: !isNaN(er) && er >= 0 && er <= 100 ? er : 0,
-          language: language || [],
+          language: language || '',
           gender: ['Male', 'Female', 'Other'].includes(gender) ? gender : 'Other',
           state,
           city,
-          category: category || [],
-          platform: platform || '',
           contactno: contactno || '',
           commercial: commercial || '',
           userId: req.user._id
@@ -558,8 +516,6 @@ router.post('/import-url', auth, async (req, res) => {
     for (let row of jsonData) {
       const name = getField(row, ['name', 'Name', 'NAME', 'fullname', 'Full Name']);
       const instagramurl = getField(row, ['instagramurl', 'Instagram URL', 'instagram url', 'instagram', 'Instagram', 'insta url', 'Insta URL']);
-      const youtubeurl = getField(row, ['youtubeurl', 'YouTube URL', 'youtube url', 'youtube', 'YouTube', 'yt url', 'YT URL']);
-      const email = getField(row, ['email', 'Email', 'EMAIL', 'e-mail', 'E-mail', 'mail', 'Mail']);
       const followersStr = getField(row, ['followers', 'Followers', 'FOLLOWERS', 'follower', 'Follower']);
       const followers = followersStr ? parseInt(followersStr) : 0;
       const averageViewStr = getField(row, ['averageview', 'Average View', 'average view', 'avg view', 'Avg View', 'averageviews', 'Average Views']);
@@ -572,15 +528,11 @@ router.post('/import-url', auth, async (req, res) => {
       const city = getField(row, ['city', 'City', 'CITY']);
       const contactno = getField(row, ['contactno', 'Contact No', 'contact no', 'Contact Number', 'contact number', 'ContactNo', 'contactNo', 'CONTACTNO', 'contact_no', 'Contact_No', 'CONTACT_NO', 'phone', 'Phone', 'PHONE', 'phone number', 'Phone Number', 'phone_number', 'Phone_Number', 'mobile', 'Mobile', 'MOBILE', 'mobile number', 'Mobile Number', 'mobile_number', 'Mobile_Number', 'contact', 'Contact', 'CONTACT', 'whatsapp', 'WhatsApp', 'whatsapp number', 'WhatsApp Number']);
       const commercial = getField(row, ['commercial', 'Commercial', 'COMMERCIAL', 'Commercials', 'commercials', 'COMMERCIALS', 'commercial value', 'Commercial Value', 'commercial_value', 'Commercial_Value']);
-      const category = getField(row, ['category', 'Category', 'CATEGORY', 'cat', 'Cat']);
-      const platform = getField(row, ['platform', 'Platform', 'PLATFORM', 'site', 'Site']);
 
       if (name && gender && city && state) {
         const dataEntry = {
           name,
           instagramurl: instagramurl || '',
-          youtubeurl: youtubeurl || '',
-          email: email || '',
           followers: !isNaN(followers) && followers >= 0 ? followers : 0,
           averageView: !isNaN(averageView) && averageView >= 0 ? averageView : 0,
           er: !isNaN(er) && er >= 0 && er <= 100 ? er : 0,

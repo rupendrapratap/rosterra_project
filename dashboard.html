@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Data Management System</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=4">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
+
 <body class="dashboard-body">
     <nav class="navbar">
         <div class="nav-container">
@@ -46,7 +49,7 @@
                     </button>
                     <span id="fileName" class="file-name"></span>
                 </div>
-                
+
                 <div class="action-buttons-top">
                     <button class="btn btn-secondary" id="addDataBtn">➕ Add Data Manually</button>
                     <button class="btn btn-primary" id="exportSelectedBtn" disabled>📥 Export Selected</button>
@@ -75,16 +78,89 @@
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label for="filterContentType">Content Type</label>
-                        <input type="text" id="filterContentType" placeholder="Filter by content type...">
+                        <label for="filterFollowers">Followers Range</label>
+                        <select id="filterFollowers">
+                            <option value="">All Ranges</option>
+                            <option value="1-5k">1-5k</option>
+                            <option value="5-10k">5-10k</option>
+                            <option value="10-20k">10-20k</option>
+                            <option value="20-50k">20-50k</option>
+                            <option value="50-100k">50-100k</option>
+                            <option value="100-300k">100-300k</option>
+                            <option value="300-500k">300-500k</option>
+                            <option value="500+">500+</option>
+                        </select>
                     </div>
-                    <div class="filter-group">
-                        <label for="filterCity">City</label>
-                        <input type="text" id="filterCity" placeholder="Filter by city...">
+                    <div class="filter-group full-width">
+                        <label>Languages (Drag to select)</label>
+                        <button type="button" class="btn-toggle-categories" id="toggleFilterLanguages">
+                            <span>Open Language Panel</span>
+                            <span class="selected-count" id="filterLanguageCount">0 Selected</span>
+                        </button>
+                        <div class="dnd-container" id="filterLanguageDnd" style="display: none;">
+                            <div class="dnd-zone">
+                                <span>Available Pool</span>
+                                <div id="filterLanguagePool" class="category-dnd-list"></div>
+                            </div>
+                            <div class="dnd-zone">
+                                <span>Selected Languages</span>
+                                <div id="filterLanguageSelected" class="category-dnd-list selected"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="filter-group">
                         <label for="filterState">State</label>
-                        <input type="text" id="filterState" placeholder="Filter by state...">
+                        <select id="filterState">
+                            <option value="">All States</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterCity">City</label>
+                        <select id="filterCity">
+                            <option value="">All Cities</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterEmail">Email</label>
+                        <input type="text" id="filterEmail" placeholder="Filter by email...">
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterYoutube">YouTube URL</label>
+                        <input type="text" id="filterYoutube" placeholder="Filter by YouTube URL...">
+                    </div>
+                    <div class="filter-group full-width">
+                        <label>Categories (Drag to select)</label>
+                        <button type="button" class="btn-toggle-categories" id="toggleFilterCategories">
+                            <span>Open Category Panel</span>
+                            <span class="selected-count" id="filterSelectedCount">0 Selected</span>
+                        </button>
+                        <div class="dnd-container" id="filterCategoryDnd" style="display: none;">
+                            <div class="dnd-zone">
+                                <span>Available Pool</span>
+                                <div id="filterCategoryPool" class="category-dnd-list"></div>
+                            </div>
+                            <div class="dnd-zone">
+                                <span>Selected Categories</span>
+                                <div id="filterCategorySelected" class="category-dnd-list selected"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-group full-width" style="margin-top: 15px;">
+                        <label>Platforms</label>
+                        <button class="btn-toggle-categories" id="toggleFilterPlatforms">
+                            <span>Open Platform Panel</span>
+                            <span class="selected-count" id="filterPlatformCount">0 Selected</span>
+                        </button>
+                        <div class="dnd-container" id="filterPlatformDnd" style="display: none;">
+                            <div class="dnd-zone">
+                                <span>Available Pool</span>
+                                <div id="filterPlatformPool" class="category-dnd-list"></div>
+                            </div>
+                            <div class="dnd-zone">
+                                <span>Selected Platforms</span>
+                                <div id="filterPlatformSelected" class="category-dnd-list selected"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="filter-group">
                         <label for="filterGender">Gender</label>
@@ -118,12 +194,17 @@
                                     <input type="checkbox" id="selectAllHeader">
                                 </th>
                                 <th>Name</th>
+                                <th>Email</th>
                                 <th>Age</th>
                                 <th>Gender</th>
-                                <th>Content Type</th>
+                                <th>Followers</th>
+                                <th>Instagram URL</th>
+                                <th>YouTube URL</th>
+                                <th>Category</th>
+                                <th>Platform</th>
                                 <th>City</th>
                                 <th>State</th>
-                                <th>Actions</th>
+                                <th class="actions-col">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
@@ -153,8 +234,28 @@
                         <input type="text" id="inputName" required placeholder="Enter name">
                     </div>
                     <div class="form-group">
+                        <label for="inputEmail">Email *</label>
+                        <input type="email" id="inputEmail" required placeholder="Enter email">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
                         <label for="inputAge">Age *</label>
                         <input type="number" id="inputAge" required min="0" max="150" placeholder="Enter age">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputFollowers">Followers Range *</label>
+                        <select id="inputFollowers" required>
+                            <option value="">Select Range</option>
+                            <option value="1-5k">1-5k</option>
+                            <option value="5-10k">5-10k</option>
+                            <option value="10-20k">10-20k</option>
+                            <option value="20-50k">20-50k</option>
+                            <option value="50-100k">50-100k</option>
+                            <option value="100-300k">100-300k</option>
+                            <option value="300-500k">300-500k</option>
+                            <option value="500+">500+</option>
+                        </select>
                     </div>
                 </div>
                 <div class="form-row">
@@ -168,18 +269,91 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="inputContentType">Content Type *</label>
-                        <input type="text" id="inputContentType" required placeholder="Enter content type">
+                        <label for="inputInstagram">Instagram URL</label>
+                        <input type="url" id="inputInstagram" placeholder="Enter Instagram URL">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="inputCity">City *</label>
-                        <input type="text" id="inputCity" required placeholder="Enter city">
+                        <label for="inputYoutube">YouTube URL</label>
+                        <input type="url" id="inputYoutube" placeholder="Enter YouTube URL">
                     </div>
+                    <div class="form-group full-width">
+                        <label>Languages * (Drag to select)</label>
+                        <button type="button" class="btn-toggle-categories" id="toggleFormLanguages">
+                            <span>Open Language Panel</span>
+                            <span class="selected-count" id="formLanguageCount">0 Selected</span>
+                        </button>
+                        <div class="dnd-container" id="formLanguageDnd" style="display: none;">
+                            <div class="dnd-zone">
+                                <span>Available Pool</span>
+                                <div id="inputLanguagePool" class="category-dnd-list"></div>
+                            </div>
+                            <div class="dnd-zone">
+                                <span>Selected Languages</span>
+                                <div id="inputLanguageSelected" class="category-dnd-list selected"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label for="inputState">State *</label>
-                        <input type="text" id="inputState" required placeholder="Enter state">
+                        <select id="inputState" required>
+                            <option value="">Select State</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputCity">City *</label>
+                        <select id="inputCity" required disabled>
+                            <option value="">Select City</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label>Categories * (Drag to select)</label>
+                        <button type="button" class="btn-toggle-categories" id="toggleFormCategories">
+                            <span>Open Category Panel</span>
+                            <span class="selected-count" id="formSelectedCount">0 Selected</span>
+                        </button>
+                        <div class="dnd-container" id="formCategoryDnd" style="display: none;">
+                            <div class="dnd-zone">
+                                <span>Available Pool</span>
+                                <div id="inputCategoryPool" class="category-dnd-list"></div>
+                            </div>
+                            <div class="dnd-zone">
+                                <span>Selected Categories</span>
+                                <div id="inputCategorySelected" class="category-dnd-list selected"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Platforms * (Drag to select)</label>
+                        <button type="button" class="btn-toggle-categories" id="toggleFormPlatforms">
+                            <span>Open Platform Panel</span>
+                            <span class="selected-count" id="formPlatformCount">0 Selected</span>
+                        </button>
+                        <div class="dnd-container" id="formPlatformDnd" style="display: none;">
+                            <div class="dnd-zone">
+                                <span>Available Pool</span>
+                                <div id="inputPlatformPool" class="category-dnd-list"></div>
+                            </div>
+                            <div class="dnd-zone">
+                                <span>Selected Platforms</span>
+                                <div id="inputPlatformSelected" class="category-dnd-list selected"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="inputAvgView">Average View</label>
+                        <input type="number" id="inputAvgView" min="0" placeholder="Enter average views">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputER">ER (%)</label>
+                        <input type="number" id="inputER" min="0" max="100" step="0.01" placeholder="Enter ER %">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -190,8 +364,7 @@
         </div>
     </div>
 
-    <script src="dashboard.js"></script>
+    <script src="dashboard.js?v=4"></script>
 </body>
+
 </html>
-
-
