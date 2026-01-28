@@ -18,6 +18,10 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "eslint": "^9.39.2"
+  },
+  "dependencies": {
+    "lodash": "^4.17.23"
   }
 }
