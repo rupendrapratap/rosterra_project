@@ -9,6 +9,7 @@ node_modules/
 # Production
 /build
 /dist
+my-electron-app/dist/
 
 # Environment variables
 .env

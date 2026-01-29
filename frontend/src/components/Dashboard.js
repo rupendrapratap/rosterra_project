@@ -79,13 +79,11 @@ const Dashboard = () => {
     contactno: '',
     commercial: '',
     category: [],
-    category: [],
     platform: [],
     averageView: 0,
     er: 0,
     age: '',
     contentType: ''
-
   });
   const [theme, setTheme] = useState('dark');
 
@@ -125,10 +123,12 @@ const Dashboard = () => {
     platform: []
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchData();
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     applyFilters();
   }, [data, filters]);
@@ -179,7 +179,7 @@ const Dashboard = () => {
         const range = filters.followers;
 
         // If it's already a range string, compare directly
-        if (typeof itemFollowers === 'string' && itemFollowers.includes('-') || itemFollowers.includes('+')) {
+        if (typeof itemFollowers === 'string' && (itemFollowers.includes('-') || itemFollowers.includes('+'))) {
           return itemFollowers === range;
         }
 
@@ -239,9 +239,13 @@ const Dashboard = () => {
     }
 
     if (filters.category && filters.category.length > 0) {
-      filtered = filtered.filter(item =>
-        filters.category.includes(item.category)
-      );
+      filtered = filtered.filter(item => {
+        const itemCategories = Array.isArray(item.category)
+          ? item.category
+          : (item.category ? [item.category] : []);
+
+        return filters.category.some(c => itemCategories.includes(c));
+      });
     }
 
     if (filters.platform && filters.platform.length > 0) {
@@ -575,15 +579,7 @@ const Dashboard = () => {
     });
   };
 
-  const formatNumber = (num) => {
-    if (num === 0 || !num) return '0';
-    const number = typeof num === 'string' ? parseFloat(num) : num;
-    if (isNaN(number)) return '0';
-    if (number >= 1000) {
-      return (number / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-    }
-    return number.toString();
-  };
+
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
