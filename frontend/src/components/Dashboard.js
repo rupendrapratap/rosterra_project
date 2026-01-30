@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import * as XLSX from 'xlsx';
+import ImportMapper from './ImportMapper';
 import './Dashboard.css';
 
 const INDIAN_STATES = [
@@ -62,6 +63,8 @@ const Dashboard = () => {
   const [showFilterCategories, setShowFilterCategories] = useState(false);
   const [showFormCategories, setShowFormCategories] = useState(false);
   const [showFormPlatforms, setShowFormPlatforms] = useState(false);
+  const [showImportMapper, setShowImportMapper] = useState(false);
+  const [importFile, setImportFile] = useState(null);
 
   const [showFilterPlatforms, setShowFilterPlatforms] = useState(false);
   const [showFilterLanguages, setShowFilterLanguages] = useState(false);
@@ -292,28 +295,26 @@ const Dashboard = () => {
   };
 
 
-  const handleFileUpload = async (e) => {
+  const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setImportFile(file);
+    setShowImportMapper(true);
+    e.target.value = ''; // Reset input
+  };
 
-    const formData = new FormData();
-    formData.append('file', file);
-
+  const handleMappedImport = async (mappedData) => {
     try {
       setLoading(true);
-      const response = await api.post('/api/data/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      alert(`Successfully imported ${response.data.count} record(s)!`);
+      const response = await api.post('/api/data/import-json', { data: mappedData });
+      alert(response.data.message);
+      setShowImportMapper(false);
+      setImportFile(null);
       fetchData();
     } catch (error) {
-      alert(error.response?.data?.message || 'Error uploading file');
+      alert(error.response?.data?.message || 'Error importing data');
     } finally {
       setLoading(false);
-      e.target.value = '';
     }
   };
 
@@ -710,6 +711,17 @@ const Dashboard = () => {
               </div>
             )}
           </div>
+
+          {showImportMapper && importFile && (
+            <ImportMapper
+              file={importFile}
+              onImport={handleMappedImport}
+              onClose={() => {
+                setShowImportMapper(false);
+                setImportFile(null);
+              }}
+            />
+          )}
 
           {/* Filters Section */}
           <div className="filters-section">

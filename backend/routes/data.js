@@ -613,6 +613,54 @@ router.post('/import-url', auth, async (req, res) => {
   }
 });
 
+// Import JSON data (already mapped)
+router.post('/import-json', auth, async (req, res) => {
+  try {
+    const { data } = req.body;
+
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({ message: 'No data provided' });
+    }
+
+    const processedData = [];
+    let skippedCount = 0;
+
+    for (let item of data) {
+      // Basic validation
+      if (item.name && item.gender && item.city && item.state) {
+        processedData.push({
+          ...item,
+          followers: !isNaN(item.followers) ? item.followers : 0,
+          averageView: !isNaN(item.averageView) ? item.averageView : 0,
+          er: !isNaN(item.er) ? item.er : 0,
+          language: Array.isArray(item.language) ? item.language : [],
+          category: Array.isArray(item.category) ? item.category : [],
+          platform: Array.isArray(item.platform) ? item.platform : [],
+          userId: req.user._id
+        });
+      } else {
+        skippedCount++;
+      }
+    }
+
+    if (processedData.length === 0) {
+      return res.status(400).json({ message: 'No valid data found (Check required fields: Name, Gender, City, State)' });
+    }
+
+    const result = await Data.insertMany(processedData);
+
+    res.json({
+      message: `Successfully imported ${result.length} record(s)${skippedCount > 0 ? `. ${skippedCount} skipped due to missing required fields.` : ''}`,
+      count: result.length,
+      skipped: skippedCount
+    });
+
+  } catch (error) {
+    console.error('Import JSON error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;
 
 
