@@ -326,13 +326,31 @@ const Dashboard = () => {
 
     try {
       setLoading(true);
-      const response = await api.post('/api/data/import-url', { url: importUrl });
-      alert(`Successfully imported ${response.data.count} record(s) from URL!`);
-      setImportUrl('');
+      // Fetch file content from backend proxy
+      const response = await api.post('/api/data/fetch-url-file', { url: importUrl });
+
+      const { fileData, fileName, fileType } = response.data;
+
+      // Convert base64 to Blob
+      const byteCharacters = atob(fileData);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: fileType });
+
+      // Create File object
+      const file = new File([blob], fileName, { type: fileType });
+
+      // Open Mapper
+      setImportFile(file);
+      setShowImportMapper(true);
       setShowUrlImport(false);
-      fetchData();
+      setImportUrl('');
+
     } catch (error) {
-      alert(error.response?.data?.message || 'Error importing from URL');
+      alert(error.response?.data?.message || 'Error fetching file from URL');
     } finally {
       setLoading(false);
     }

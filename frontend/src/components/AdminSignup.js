@@ -6,6 +6,7 @@ import './AdminSignup.css';
 const AdminSignup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState('talent_manager');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -62,15 +63,25 @@ const AdminSignup = () => {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password (min 6 characters)"
-              required
-              minLength="6"
-            />
+            <div className="password-input-container">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password (min 6 characters)"
+                required
+                minLength="6"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
           </div>
 
           <div className="form-group">
@@ -92,9 +103,9 @@ const AdminSignup = () => {
         </form>
 
         <div className="admin-signup-footer">
-          <button 
-            type="button" 
-            className="back-button" 
+          <button
+            type="button"
+            className="back-button"
             onClick={() => navigate('/dashboard')}
           >
             ← Back to Dashboard

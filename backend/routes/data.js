@@ -661,6 +661,46 @@ router.post('/import-json', auth, async (req, res) => {
   }
 });
 
+// Fetch file from URL for frontend processing (mapping)
+router.post('/fetch-url-file', auth, async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ message: 'Please provide a URL' });
+    }
+
+    // Convert Google Sheets URL to CSV export if needed
+    const downloadUrl = convertGoogleSheetsUrl(url);
+
+    // Download the file
+    let fileBuffer;
+    try {
+      console.log(`Attempting to download from URL: ${downloadUrl}`);
+      fileBuffer = await downloadFile(downloadUrl);
+      console.log(`Successfully downloaded ${fileBuffer.length} bytes`);
+    } catch (error) {
+      console.error('Download error:', error);
+      return res.status(400).json({
+        message: `Failed to download file from URL: ${error.message}`,
+        details: 'Make sure the URL is accessible and the file is publicly available.'
+      });
+    }
+
+    // Return file as base64
+    res.json({
+      message: 'File fetched successfully',
+      fileData: fileBuffer.toString('base64'),
+      fileName: 'imported_file' + (downloadUrl.endsWith('.csv') ? '.csv' : '.xlsx'),
+      fileType: downloadUrl.endsWith('.csv') ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+  } catch (error) {
+    console.error('Fetch URL file error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;
 
 
