@@ -22,6 +22,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -91,6 +92,7 @@
   transition: all 0.3s ease;
   background: #f9f9f9;
   box-sizing: border-box;
+  color: black;
 }
 
 .form-group input:focus,
@@ -149,6 +151,3 @@
   background: rgba(102, 126, 234, 0.1);
   text-decoration: none;
 }
-
-
-

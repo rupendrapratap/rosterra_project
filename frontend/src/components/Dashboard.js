@@ -637,12 +637,12 @@ const Dashboard = () => {
           <div className="upload-section">
             {(user?.role === 'admin' || user?.role === 'talent_manager') && (
               <div className="upload-card">
-                <h3>📤 Upload Excel File</h3>
-                <p>Upload an Excel (.xlsx, .xls) file to import data</p>
+                <h3>📤 Upload Excel/CSV File</h3>
+                <p>Upload a file (.xlsx, .xls, .csv) to import data</p>
                 <input
                   type="file"
                   id="excelFileInput"
-                  accept=".xlsx,.xls"
+                  accept=".xlsx,.xls,.csv"
                   onChange={handleFileUpload}
                   style={{ display: 'none' }}
                 />
@@ -650,7 +650,7 @@ const Dashboard = () => {
                   className="btn btn-primary"
                   onClick={() => document.getElementById('excelFileInput').click()}
                 >
-                  Choose Excel File
+                  Choose File
                 </button>
               </div>
             )}
