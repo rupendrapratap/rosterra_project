@@ -33,35 +33,41 @@ const ImportMapper = ({ file, onImport, onClose }) => {
             setLoading(true);
             const reader = new FileReader();
             reader.onload = (e) => {
-                const data = e.target.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }); // Get raw array of arrays
+                try {
+                    const data = e.target.result;
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }); // Get raw array of arrays
 
-                if (json.length > 0) {
-                    const fileHeaders = json[0];
-                    const rows = XLSX.utils.sheet_to_json(sheet); // Get object array for data
-                    setHeaders(fileHeaders);
-                    setFileData(rows);
+                    if (json.length > 0) {
+                        const fileHeaders = json[0];
+                        const rows = XLSX.utils.sheet_to_json(sheet); // Get object array for data
+                        setHeaders(fileHeaders);
+                        setFileData(rows);
 
-                    // Auto-automap based on name similarity
-                    const newMapping = {};
-                    SYSTEM_FIELDS.forEach(field => {
-                        const match = fileHeaders.find(h =>
-                            h.toLowerCase().replace(/[^a-z0-9]/g, '') === field.key.toLowerCase() ||
-                            h.toLowerCase().includes(field.label.toLowerCase())
-                        );
-                        if (match) {
-                            newMapping[field.key] = match;
-                        }
-                    });
-                    setMapping(newMapping);
-                    updatePreview(newMapping, rows);
+                        // Auto-automap based on name similarity
+                        const newMapping = {};
+                        SYSTEM_FIELDS.forEach(field => {
+                            const match = fileHeaders.find(h =>
+                                h.toLowerCase().replace(/[^a-z0-9]/g, '') === field.key.toLowerCase() ||
+                                h.toLowerCase().includes(field.label.toLowerCase())
+                            );
+                            if (match) {
+                                newMapping[field.key] = match;
+                            }
+                        });
+                        setMapping(newMapping);
+                        updatePreview(newMapping, rows);
+                    }
+                } catch (error) {
+                    console.error("File parse error:", error);
+                    alert("Error parsing file. Please check if the file is a valid Excel or CSV file.");
+                    onClose();
                 }
                 setLoading(false);
             };
-            reader.readAsBinaryString(file);
+            reader.readAsArrayBuffer(file);
         }
     }, [file]);
 
