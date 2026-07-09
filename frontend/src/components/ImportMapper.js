@@ -69,7 +69,7 @@ const ImportMapper = ({ file, onImport, onClose }) => {
             };
             reader.readAsArrayBuffer(file);
         }
-    }, [file]);
+    }, [file, onClose]);
 
     const updatePreview = (currentMapping, data) => {
         // Show first 3 rows as they would look after import
