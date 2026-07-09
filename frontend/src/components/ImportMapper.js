@@ -108,7 +108,16 @@ const ImportMapper = ({ file, onImport, onClose }) => {
             });
 
             // Default basic validation fallback
-            if (newRow.gender && !['Male', 'Female', 'Other'].includes(newRow.gender)) {
+            if (newRow.gender) {
+                const gLower = newRow.gender.toString().trim().toLowerCase();
+                if (gLower === 'male') {
+                    newRow.gender = 'Male';
+                } else if (gLower === 'female') {
+                    newRow.gender = 'Female';
+                } else {
+                    newRow.gender = 'Other';
+                }
+            } else {
                 newRow.gender = 'Other';
             }
 

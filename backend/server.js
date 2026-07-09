@@ -24,6 +24,22 @@ const connectDB = async () => {
     );
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+
+    // Seed default admin if no users exist
+    const User = require('./models/User');
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      console.log('No users found in the database. Seeding a default admin user...');
+      const defaultAdmin = new User({
+        email: 'admin@rosterra.com',
+        password: 'adminpassword123',
+        role: 'admin'
+      });
+      await defaultAdmin.save();
+      console.log('Default admin user seeded successfully:');
+      console.log('  Email: admin@rosterra.com');
+      console.log('  Password: adminpassword123');
+    }
   } catch (error) {
     console.error('Error connecting to MongoDB:', error.message);
     process.exit(1);

@@ -254,13 +254,21 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
       const er = erStr ? parseFloat(erStr) : 0;
       const languageStr = getField(row, ['language', 'Language', 'LANGUAGE', 'lang', 'Lang']);
       const language = languageStr ? languageStr.split(',').map(l => l.trim()).filter(l => l) : [];
-      const gender = getField(row, ['gender', 'Gender', 'GENDER', 'sex', 'Sex']);
+      const genderRaw = getField(row, ['gender', 'Gender', 'GENDER', 'sex', 'Sex']);
+      let gender = 'Other';
+      if (genderRaw) {
+        const gLower = genderRaw.trim().toLowerCase();
+        if (gLower === 'male') gender = 'Male';
+        else if (gLower === 'female') gender = 'Female';
+      }
       const state = getField(row, ['state', 'State', 'STATE']);
       const city = getField(row, ['city', 'City', 'CITY']);
       const contactno = getField(row, ['contactno', 'Contact No', 'contact no', 'Contact Number', 'contact number', 'ContactNo', 'contactNo', 'CONTACTNO', 'contact_no', 'Contact_No', 'CONTACT_NO', 'phone', 'Phone', 'PHONE', 'phone number', 'Phone Number', 'phone_number', 'Phone_Number', 'mobile', 'Mobile', 'MOBILE', 'mobile number', 'Mobile Number', 'mobile_number', 'Mobile_Number', 'contact', 'Contact', 'CONTACT', 'whatsapp', 'WhatsApp', 'whatsapp number', 'WhatsApp Number']);
       const commercial = getField(row, ['commercial', 'Commercial', 'COMMERCIAL', 'Commercials', 'commercials', 'COMMERCIALS', 'commercial value', 'Commercial Value', 'commercial_value', 'Commercial_Value']);
-      const category = getField(row, ['category', 'Category', 'CATEGORY', 'cat', 'Cat']);
-      const platform = getField(row, ['platform', 'Platform', 'PLATFORM', 'site', 'Site']);
+      const categoryStr = getField(row, ['category', 'Category', 'CATEGORY', 'cat', 'Cat']);
+      const category = categoryStr ? categoryStr.split(',').map(c => c.trim()).filter(c => c) : [];
+      const platformStr = getField(row, ['platform', 'Platform', 'PLATFORM', 'site', 'Site']);
+      const platform = platformStr ? platformStr.split(',').map(p => p.trim()).filter(p => p) : [];
 
       if (name && gender && city && state) {
         const dataEntry = {
@@ -272,11 +280,11 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
           averageView: !isNaN(averageView) && averageView >= 0 ? averageView : 0,
           er: !isNaN(er) && er >= 0 && er <= 100 ? er : 0,
           language: language || [],
-          gender: ['Male', 'Female', 'Other'].includes(gender) ? gender : 'Other',
+          gender,
           state,
           city,
           category: category || [],
-          platform: platform || '',
+          platform: platform || [],
           contactno: contactno || '',
           commercial: commercial || '',
           userId: req.user._id
@@ -566,14 +574,23 @@ router.post('/import-url', auth, async (req, res) => {
       const averageView = averageViewStr ? parseInt(averageViewStr) : 0;
       const erStr = getField(row, ['er', 'ER', 'er (%)', 'ER (%)', 'engagement rate', 'Engagement Rate', 'engagement', 'Engagement']);
       const er = erStr ? parseFloat(erStr) : 0;
-      const language = getField(row, ['language', 'Language', 'LANGUAGE', 'lang', 'Lang']);
-      const gender = getField(row, ['gender', 'Gender', 'GENDER', 'sex', 'Sex']);
+      const languageStr = getField(row, ['language', 'Language', 'LANGUAGE', 'lang', 'Lang']);
+      const language = languageStr ? languageStr.split(',').map(l => l.trim()).filter(l => l) : [];
+      const genderRaw = getField(row, ['gender', 'Gender', 'GENDER', 'sex', 'Sex']);
+      let gender = 'Other';
+      if (genderRaw) {
+        const gLower = genderRaw.trim().toLowerCase();
+        if (gLower === 'male') gender = 'Male';
+        else if (gLower === 'female') gender = 'Female';
+      }
       const state = getField(row, ['state', 'State', 'STATE']);
       const city = getField(row, ['city', 'City', 'CITY']);
       const contactno = getField(row, ['contactno', 'Contact No', 'contact no', 'Contact Number', 'contact number', 'ContactNo', 'contactNo', 'CONTACTNO', 'contact_no', 'Contact_No', 'CONTACT_NO', 'phone', 'Phone', 'PHONE', 'phone number', 'Phone Number', 'phone_number', 'Phone_Number', 'mobile', 'Mobile', 'MOBILE', 'mobile number', 'Mobile Number', 'mobile_number', 'Mobile_Number', 'contact', 'Contact', 'CONTACT', 'whatsapp', 'WhatsApp', 'whatsapp number', 'WhatsApp Number']);
       const commercial = getField(row, ['commercial', 'Commercial', 'COMMERCIAL', 'Commercials', 'commercials', 'COMMERCIALS', 'commercial value', 'Commercial Value', 'commercial_value', 'Commercial_Value']);
-      const category = getField(row, ['category', 'Category', 'CATEGORY', 'cat', 'Cat']);
-      const platform = getField(row, ['platform', 'Platform', 'PLATFORM', 'site', 'Site']);
+      const categoryStr = getField(row, ['category', 'Category', 'CATEGORY', 'cat', 'Cat']);
+      const category = categoryStr ? categoryStr.split(',').map(c => c.trim()).filter(c => c) : [];
+      const platformStr = getField(row, ['platform', 'Platform', 'PLATFORM', 'site', 'Site']);
+      const platform = platformStr ? platformStr.split(',').map(p => p.trim()).filter(p => p) : [];
 
       if (name && gender && city && state) {
         const dataEntry = {
@@ -584,10 +601,12 @@ router.post('/import-url', auth, async (req, res) => {
           followers: !isNaN(followers) && followers >= 0 ? followers : 0,
           averageView: !isNaN(averageView) && averageView >= 0 ? averageView : 0,
           er: !isNaN(er) && er >= 0 && er <= 100 ? er : 0,
-          language: language || '',
-          gender: ['Male', 'Female', 'Other'].includes(gender) ? gender : 'Other',
+          language: language || [],
+          gender,
           state,
           city,
+          category: category || [],
+          platform: platform || [],
           contactno: contactno || '',
           commercial: commercial || '',
           userId: req.user._id
